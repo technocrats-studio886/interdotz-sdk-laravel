@@ -1,0 +1,39 @@
+{
+    "name": "interdotz/sdk-laravel",
+    "description": "Laravel wrapper for the Interdotz PHP SDK",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "interdotz/sdk-php": "^1.0",
+        "illuminate/support": "^11.0",
+        "illuminate/contracts": "^11.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "orchestra/testbench": "^9.0",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Interdotz\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Interdotz\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Interdotz\\Laravel\\InterdotzServiceProvider"
+            ],
+            "aliases": {
+                "Interdotz": "Interdotz\\Laravel\\Facades\\Interdotz"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
