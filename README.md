@@ -12,11 +12,12 @@ Laravel wrapper resmi untuk [Interdotz PHP SDK](../sdk-php/README.md). Menyediak
 4. [Setup](#setup)
 5. [Penggunaan — Facade vs Dependency Injection](#penggunaan--facade-vs-dependency-injection)
 6. [Implementasi Lengkap — SSO](#implementasi-lengkap--sso)
-7. [Implementasi Lengkap — Direct Charge](#implementasi-lengkap--direct-charge)
-8. [Implementasi Lengkap — Charge dengan Konfirmasi](#implementasi-lengkap--charge-dengan-konfirmasi)
-9. [Implementasi Lengkap — Webhook](#implementasi-lengkap--webhook)
-10. [Config Reference](#config-reference)
-11. [Changelog](#changelog)
+7. [Implementasi Lengkap — Direct Charge (Dots Unit)](#implementasi-lengkap--direct-charge-dots-unit)
+8. [Implementasi Lengkap — Charge dengan Konfirmasi (Dots Unit)](#implementasi-lengkap--charge-dengan-konfirmasi-dots-unit)
+9. [Implementasi Lengkap — Midtrans Payment](#implementasi-lengkap--midtrans-payment)
+10. [Implementasi Lengkap — Webhook](#implementasi-lengkap--webhook)
+11. [Config Reference](#config-reference)
+12. [Changelog](#changelog)
 
 ---
 
@@ -232,7 +233,7 @@ class SsoController extends Controller
 
 ---
 
-## Implementasi Lengkap — Direct Charge
+## Implementasi Lengkap — Direct Charge (Dots Unit)
 
 Gunakan ini untuk charge DU langsung tanpa interupsi ke user. Cocok untuk pembelian item, penggunaan fitur premium, atau transaksi rutin.
 
@@ -322,7 +323,7 @@ class OrderController extends Controller
 
 ---
 
-## Implementasi Lengkap — Charge dengan Konfirmasi
+## Implementasi Lengkap — Charge dengan Konfirmasi (Dots Unit)
 
 Gunakan ini saat kamu ingin user menyetujui transaksi secara eksplisit — misalnya untuk langganan atau pembelian nominal besar.
 
@@ -406,6 +407,80 @@ class CheckoutController extends Controller
 
 ---
 
+## Implementasi Lengkap — Midtrans Payment
+
+Pembayaran IDR via Midtrans Snap untuk item apapun — bukan Dots Unit.
+
+### Routes
+
+```php
+// routes/web.php
+Route::post('/checkout/{order}/pay', [MidtransController::class, 'initiate'])->name('midtrans.initiate');
+Route::get('/payment/callback',      [MidtransController::class, 'callback'])->name('midtrans.callback');
+```
+
+### Controller
+
+```php
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Interdotz\Laravel\Facades\Interdotz;
+use Interdotz\Sdk\Exceptions\PaymentException;
+
+class MidtransController extends Controller
+{
+    public function initiate(Request $request, Order $order)
+    {
+        $user = $request->user();
+
+        try {
+            $token = Interdotz::auth()->authenticate($user->interdotz_id);
+
+            $payment = Interdotz::payment()->createMidtransPayment(
+                accessToken: $token->accessToken,
+                referenceId: (string) $order->id,
+                amount:      $order->total_price,
+                items:       $order->items->map(fn ($item) => [
+                    'id'       => (string) $item->id,
+                    'name'     => $item->name,
+                    'price'    => $item->price,
+                    'quantity' => $item->quantity,
+                ])->toArray(),
+                callbackUrl: route('midtrans.callback'),
+                customer:    [
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ],
+            );
+
+            // Simpan payment ID untuk tracking
+            $order->update(['payment_id' => $payment->id]);
+
+            // Redirect ke halaman pembayaran Midtrans
+            return redirect($payment->redirectUrl);
+
+        } catch (PaymentException $e) {
+            return back()->with('error', 'Gagal membuat pembayaran: ' . $e->getMessage());
+        }
+    }
+
+    public function callback(Request $request)
+    {
+        // Callback dari redirect Midtrans — jangan proses fulfillment di sini
+        // Tunggu konfirmasi via webhook
+        return redirect()->route('orders.index')
+            ->with('info', 'Pembayaran sedang diproses, kami akan konfirmasi segera.');
+    }
+}
+```
+
+> Jangan proses fulfillment dari callback redirect — gunakan **webhook** sebagai sumber kebenaran.
+
+---
+
 ## Implementasi Lengkap — Webhook
 
 ### Routes
@@ -443,19 +518,53 @@ class WebhookController extends Controller
         try {
             $payload = Interdotz::webhook()->parse($request->getContent());
 
+            // ── Dots Unit events ──────────────────────────────────────────
             if ($payload->isSuccess()) {
-                $this->handleSuccess(
-                    referenceId:    $payload->data['referenceId'],
-                    transactionId:  $payload->data['transactionId'],
-                    amountCharged:  $payload->data['amount'],
-                );
+                $order = Order::find($payload->data['referenceId']);
+
+                if ($order && $order->status !== 'paid') {
+                    $order->update([
+                        'status'         => 'paid',
+                        'transaction_id' => $payload->data['transactionId'],
+                        'paid_at'        => now(),
+                    ]);
+                }
             }
 
             if ($payload->isFailed()) {
-                $this->handleFailed(
-                    referenceId:  $payload->data['referenceId'],
-                    errorMessage: $payload->data['errorMessage'],
-                );
+                Order::find($payload->data['referenceId'])
+                    ?->update(['status' => 'failed']);
+
+                Log::info('DU charge failed', [
+                    'reference_id' => $payload->data['referenceId'],
+                    'reason'       => $payload->data['errorMessage'],
+                ]);
+            }
+
+            // ── Midtrans events ───────────────────────────────────────────
+            if ($payload->isPaymentSettlement()) {
+                $order = Order::find($payload->data['reference_id']);
+
+                if ($order && $order->status !== 'paid') {
+                    $order->update([
+                        'status'                  => 'paid',
+                        'gateway_transaction_id'  => $payload->data['gateway_transaction_id'],
+                        'payment_method'          => $payload->data['payment_method'],
+                        'paid_at'                 => now(),
+                    ]);
+
+                    // Trigger fulfillment, kirim email, dll.
+                }
+            }
+
+            if ($payload->isPaymentFailed()) {
+                Order::find($payload->data['reference_id'])
+                    ?->update(['status' => 'failed']);
+
+                Log::info('Midtrans payment failed', [
+                    'reference_id' => $payload->data['reference_id'],
+                    'status'       => $payload->data['status'],
+                ]);
             }
 
             return response()->json(['message' => 'OK']);
@@ -468,34 +577,6 @@ class WebhookController extends Controller
 
             return response()->json(['message' => 'Invalid payload'], 400);
         }
-    }
-
-    private function handleSuccess(string $referenceId, string $transactionId, int $amountCharged): void
-    {
-        $order = Order::find($referenceId);
-
-        if (!$order || $order->status === 'paid') {
-            return; // idempotency check — sudah diproses sebelumnya
-        }
-
-        $order->update([
-            'status'         => 'paid',
-            'transaction_id' => $transactionId,
-            'paid_at'        => now(),
-        ]);
-
-        // Trigger fulfillment, kirim notifikasi, dll.
-    }
-
-    private function handleFailed(string $referenceId, ?string $errorMessage): void
-    {
-        $order = Order::find($referenceId);
-        $order?->update(['status' => 'failed']);
-
-        Log::info('Interdotz charge failed', [
-            'reference_id' => $referenceId,
-            'reason'       => $errorMessage,
-        ]);
     }
 }
 ```
@@ -533,4 +614,7 @@ INTERDOTZ_TIMEOUT=10
 - Initial release
 - `InterdotzServiceProvider` dengan auto-discovery
 - Facade `Interdotz` dengan method `auth()`, `payment()`, `sso()`, `webhook()`
+- Payment DU: `directCharge()`, `createChargeRequest()`, `getBalance()`
+- Payment Midtrans: `createMidtransPayment()`, `getMidtransPaymentStatus()`
+- Webhook: support event DU (`charge.success`, `charge.failed`) dan Midtrans (`payment.settlement`, `payment.failed`)
 - Publishable config file via `php artisan vendor:publish --tag=interdotz-config`
