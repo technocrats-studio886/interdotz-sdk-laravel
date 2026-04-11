@@ -60,11 +60,11 @@ Tambahkan di `composer.json` project Laravel kamu:
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/interdotz/sdk-php"
+            "url": "https://github.com/technocrats-studio886/interdotz-sdk-php"
         },
         {
             "type": "vcs",
-            "url": "https://github.com/interdotz/sdk-laravel"
+            "url": "https://github.com/technocrats-studio886/interdotz-sdk-laravel"
         }
     ],
     "require": {
