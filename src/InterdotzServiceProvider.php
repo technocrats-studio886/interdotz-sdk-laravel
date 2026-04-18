@@ -2,6 +2,7 @@
 
 namespace Interdotz\Laravel;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Interdotz\Sdk\InterdotzClient;
 
@@ -27,8 +28,16 @@ class InterdotzServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'interdotz');
+
+        Route::group([], __DIR__ . '/../routes/mailbox.php');
+
         $this->publishes([
             __DIR__ . '/../config/interdotz.php' => config_path('interdotz.php'),
         ], 'interdotz-config');
+
+        $this->publishes([
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/interdotz'),
+        ], 'interdotz-views');
     }
 }
