@@ -3,6 +3,7 @@
 namespace Interdotz\Laravel\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Route;
 use Interdotz\Sdk\Auth\AuthClient;
 use Interdotz\Sdk\InterdotzClient;
 use Interdotz\Sdk\Mailbox\MailboxClient;
@@ -24,5 +25,15 @@ class Interdotz extends Facade
     protected static function getFacadeAccessor(): string
     {
         return InterdotzClient::class;
+    }
+
+    public static function routes(array $options = []): void
+    {
+        $prefix     = $options['prefix']     ?? 'interdotz';
+        $middleware = $options['middleware']  ?? ['web'];
+
+        Route::prefix($prefix)->middleware($middleware)->group(
+            __DIR__ . '/../../routes/mailbox.php'
+        );
     }
 }

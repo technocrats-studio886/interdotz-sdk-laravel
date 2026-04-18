@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Interdotz\Laravel\Http\Controllers\MailboxProxyController;
 
-Route::prefix('interdotz/mailbox')->middleware('web')->group(function () {
+Route::prefix('mailbox')->group(function () {
     Route::get('/inbox',          [MailboxProxyController::class, 'inbox']);
     Route::get('/sent',           [MailboxProxyController::class, 'sent']);
     Route::put('/read-all',       [MailboxProxyController::class, 'markAllRead']);

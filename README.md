@@ -16,8 +16,9 @@ Laravel wrapper resmi untuk [Interdotz PHP SDK](../sdk-php/README.md). Menyediak
 8. [Implementasi Lengkap — Charge dengan Konfirmasi (Dots Unit)](#implementasi-lengkap--charge-dengan-konfirmasi-dots-unit)
 9. [Implementasi Lengkap — Midtrans Payment](#implementasi-lengkap--midtrans-payment)
 10. [Implementasi Lengkap — Webhook](#implementasi-lengkap--webhook)
-11. [Config Reference](#config-reference)
-12. [Changelog](#changelog)
+11. [Mailbox UI](#mailbox-ui)
+12. [Config Reference](#config-reference)
+13. [Changelog](#changelog)
 
 ---
 
@@ -585,6 +586,44 @@ class WebhookController extends Controller
 
 ---
 
+## Mailbox UI
+
+Package ini menyediakan UI mailbox bawaan yang dapat di-mount ke route manapun. Route mailbox **tidak** didaftarkan secara otomatis — kamu harus memanggil `Interdotz::routes()` secara eksplisit.
+
+### Mendaftarkan Routes
+
+```php
+// routes/web.php
+use Interdotz\Laravel\Facades\Interdotz;
+
+Interdotz::routes();
+```
+
+Dengan konfigurasi default, route berikut akan tersedia:
+
+| Method | URL | Deskripsi |
+|--------|-----|-----------|
+| `GET` | `/interdotz/mailbox/inbox` | Daftar pesan masuk |
+| `GET` | `/interdotz/mailbox/sent` | Daftar pesan terkirim |
+| `GET` | `/interdotz/mailbox/{mailId}` | Detail pesan |
+| `POST` | `/interdotz/mailbox/send` | Kirim pesan baru |
+| `PUT` | `/interdotz/mailbox/{mailId}/read` | Tandai satu pesan sebagai dibaca |
+| `PUT` | `/interdotz/mailbox/read-all` | Tandai semua pesan sebagai dibaca |
+| `DELETE` | `/interdotz/mailbox/{mailId}` | Hapus pesan |
+
+### Kustomisasi Prefix & Middleware
+
+```php
+Interdotz::routes([
+    'prefix'     => 'my-app/mailbox',   // default: 'interdotz'
+    'middleware' => ['web', 'auth'],    // default: ['web']
+]);
+```
+
+Contoh di atas akan menghasilkan route seperti `/my-app/mailbox/inbox`.
+
+---
+
 ## Config Reference
 
 File: `config/interdotz.php`
@@ -609,6 +648,11 @@ INTERDOTZ_TIMEOUT=10
 ---
 
 ## Changelog
+
+### v0.2.0
+- Tambah Mailbox UI dengan route bawaan
+- `Interdotz::routes()` — daftarkan route mailbox secara eksplisit dengan opsi `prefix` dan `middleware`
+- Route mailbox tidak lagi didaftarkan otomatis oleh ServiceProvider
 
 ### v0.1.0
 - Initial release
