@@ -361,7 +361,7 @@ class CheckoutController extends Controller
                 amount:        $order->du_amount,
                 referenceType: 'PURCHASE',
                 referenceId:   (string) $order->id,
-                callbackUrl:   route('checkout.callback'),
+                redirectUrl:   route('checkout.callback'),
                 description:   "Pembayaran Order #{$order->id} — {$order->title}",
                 productLogo:   asset('images/logo.png'),
             );
@@ -449,7 +449,7 @@ class MidtransController extends Controller
                     'price'    => $item->price,
                     'quantity' => $item->quantity,
                 ])->toArray(),
-                callbackUrl: route('midtrans.callback'),
+                redirectUrl: route('midtrans.callback'),
                 customer:    [
                     'name'  => $user->name,
                     'email' => $user->email,
