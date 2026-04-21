@@ -29,8 +29,8 @@ class Interdotz extends Facade
 
     public static function routes(array $options = []): void
     {
-        $prefix     = $options['prefix']     ?? 'interdotz';
-        $middleware = $options['middleware']  ?? ['web'];
+        $prefix     = $options['prefix']     ?? 'api/client';
+        $middleware = $options['middleware']  ?? ['api'];
 
         Route::prefix($prefix)->middleware($middleware)->group(
             __DIR__ . '/../../routes/mailbox.php'
