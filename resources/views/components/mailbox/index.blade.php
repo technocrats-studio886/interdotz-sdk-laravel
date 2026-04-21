@@ -555,13 +555,12 @@
     // ── Send mail ─────────────────────────────────────────────────────────────
 
     window.idtzSendMail = async function () {
-        const recipientId       = document.getElementById('idtz-compose-recipient-id').value.trim();
-        const recipientClientId = document.getElementById('idtz-compose-recipient-client').value.trim();
-        const subject           = document.getElementById('idtz-compose-subject').value.trim();
-        const body              = document.getElementById('idtz-compose-body').value.trim();
-        const btn               = document.getElementById('idtz-send-btn');
+        const recipientEmail = document.getElementById('idtz-compose-recipient-email').value.trim();
+        const subject        = document.getElementById('idtz-compose-subject').value.trim();
+        const body           = document.getElementById('idtz-compose-body').value.trim();
+        const btn            = document.getElementById('idtz-send-btn');
 
-        if (!recipientId || !recipientClientId || !subject || !body) {
+        if (!recipientEmail || !subject || !body) {
             alert('Semua field wajib diisi.'); return;
         }
 
@@ -570,14 +569,13 @@
 
         try {
             await idtzPost('/interdotz/mailbox/send', {
-                recipient_id:        recipientId,
-                recipient_client_id: recipientClientId,
+                recipient_email: recipientEmail,
                 subject,
                 body,
             });
             idtzSent = null; // invalidate sent cache
             idtzCloseCompose();
-            ['idtz-compose-recipient-id','idtz-compose-recipient-client','idtz-compose-subject','idtz-compose-body']
+            ['idtz-compose-recipient-email','idtz-compose-subject','idtz-compose-body']
                 .forEach(id => { document.getElementById(id).value = ''; });
         } catch (e) {
             alert(e.message);
@@ -601,9 +599,8 @@
 
         try {
             await idtzPost('/interdotz/mailbox/send', {
-                recipient_id:        item.senderId,
-                recipient_client_id: item.senderClientId,
-                subject:             `Re: ${item.subject}`,
+                recipient_email: `${item.senderUsername}@interdotz.com`,
+                subject:         `Re: ${item.subject}`,
                 body,
             });
             idtzSent = null;

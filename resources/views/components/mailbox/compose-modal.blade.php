@@ -18,20 +18,11 @@
         {{-- Fields --}}
         <div class="flex flex-col border-b border-gray-200">
             <div class="flex items-center px-4 py-2.5 border-b border-gray-100">
-                <span class="text-xs text-gray-400 w-24 flex-shrink-0">User ID Penerima</span>
+                <span class="text-xs text-gray-400 w-24 flex-shrink-0">Kepada</span>
                 <input
-                    id="idtz-compose-recipient-id"
-                    type="text"
-                    placeholder="ID pengguna penerima"
-                    class="flex-1 text-sm text-gray-800 placeholder-gray-400 focus:outline-none ml-2"
-                />
-            </div>
-            <div class="flex items-center px-4 py-2.5 border-b border-gray-100">
-                <span class="text-xs text-gray-400 w-24 flex-shrink-0">Client ID</span>
-                <input
-                    id="idtz-compose-recipient-client"
-                    type="text"
-                    placeholder="Client ID penerima"
+                    id="idtz-compose-recipient-email"
+                    type="email"
+                    placeholder="username@interdotz.com"
                     class="flex-1 text-sm text-gray-800 placeholder-gray-400 focus:outline-none ml-2"
                 />
             </div>

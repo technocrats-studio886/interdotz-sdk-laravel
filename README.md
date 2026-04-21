@@ -611,6 +611,27 @@ Dengan konfigurasi default, route berikut akan tersedia:
 | `PUT` | `/interdotz/mailbox/read-all` | Tandai semua pesan sebagai dibaca |
 | `DELETE` | `/interdotz/mailbox/{mailId}` | Hapus pesan |
 
+### Kirim Pesan
+
+Endpoint `POST /interdotz/mailbox/send` menerima:
+
+| Field | Wajib | Deskripsi |
+|-------|-------|-----------|
+| `recipient_email` | Ya | Email Interdotz penerima, format `username@interdotz.com` |
+| `subject` | Ya | Subjek pesan, maks 200 karakter |
+| `body` | Ya | Isi pesan |
+| `recipient_client_id` | Tidak | UUID client app penerima — jika kosong, default ke client pengirim |
+
+Contoh:
+
+```json
+{
+    "recipient_email": "john_doe@interdotz.com",
+    "subject": "Halo!",
+    "body": "Ini pesan pertamaku."
+}
+```
+
 ### Kustomisasi Prefix & Middleware
 
 ```php
@@ -648,6 +669,11 @@ INTERDOTZ_TIMEOUT=10
 ---
 
 ## Changelog
+
+### v0.3.0
+- Kirim pesan kini pakai `recipient_email` (format `username@interdotz.com`) — tidak perlu lagi input `recipient_id` UUID
+- `recipient_client_id` menjadi opsional — default ke client pengirim jika tidak diisi
+- UI compose modal diperbarui: field "User ID" dan "Client ID" diganti satu field email
 
 ### v0.2.0
 - Tambah Mailbox UI dengan route bawaan

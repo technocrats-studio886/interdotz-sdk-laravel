@@ -43,18 +43,18 @@ class MailboxProxyController extends Controller
     public function send(Request $request): JsonResponse
     {
         $request->validate([
-            'recipient_id'        => 'required|string',
-            'recipient_client_id' => 'required|string',
+            'recipient_email'     => 'required|email',
+            'recipient_client_id' => 'nullable|string',
             'subject'             => 'required|string|max:200',
             'body'                => 'required|string',
         ]);
 
         return $this->proxy(fn() => $this->client->mailbox()->send(
             accessToken:       $this->token($request),
-            recipientId:       $request->string('recipient_id'),
-            recipientClientId: $request->string('recipient_client_id'),
+            recipientEmail:    $request->string('recipient_email'),
             subject:           $request->string('subject'),
             body:              $request->string('body'),
+            recipientClientId: $request->input('recipient_client_id'),
         ));
     }
 
